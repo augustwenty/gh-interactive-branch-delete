@@ -1,0 +1,47 @@
+#!/bin/bash
+
+echo "Hello gh-interactive_branch_delete!"
+
+BRANCHES=()
+let ctr=0
+eval "$(git for-each-ref --count=10 --sort=-committerdate --format='BRANCHES+=(%(refname:short))' refs/heads/)"
+
+run=true
+while( $run ); do
+  let ctr=1
+  while [ $ctr -le ${#BRANCHES[@]} ]; do
+    echo "--- $ctr. ${BRANCHES[$ctr-1]}"
+    let ctr++
+  done
+
+  echo -n "Enter number of branch(es) to delete, enter 'Q' to quit [Q/#]: "
+  read -a remove
+  remove=${remove:-Q}
+  echo ""
+
+  if [ ${remove[0]} = "Q" ] || [ ${remove[0]} = "q" ]; then
+    exit 0
+  fi
+
+  let ctr=1
+  for i in ${remove[@]}; do
+    echo " -- $ctr. ${BRANCHES[$i-1]}"
+    let ctr++
+  done
+
+  echo -n "Really delete the these branches? [Y/n]: "
+  read confirm
+  confirm=${confirm:-Y}
+  echo "$confirm"
+
+  if [ $confirm = "Y" ] || [ $confirm = "y" ]; then
+    for i in ${remove[@]}; do
+      cmd=`echo ${BRANCHES[$i-1]} | awk '{gsub("refs/heads", ""); print "git branch -D "$0}'`
+      echo $cmd
+      echo $cmd | /bin/sh
+      unset BRANCHES[$i-1]
+    done
+    echo ""
+  fi
+  BRANCHES=( "${BRANCHES[@]}" )
+done
